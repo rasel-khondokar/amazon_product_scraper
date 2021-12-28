@@ -1,6 +1,10 @@
 import logging
 import os
 import requests
+from datetime import datetime
+
+from settings import DIRNAME_ERROR_LOG, TIME_ZONE
+
 
 def make_dir_if_not_exists(file_path):
     dirs = file_path.split('/')
@@ -32,3 +36,15 @@ def image_downloader(img_url, img_name, img_path):
         print(f"Image downloaded to {img_path}!")
     except Exception as e:
         logging.exception(e)
+
+def save_error_log(name):
+    error_log = logging.getLogger(name)
+    error_log_formatter = logging.Formatter('%(asctime)s : %(message)s')
+    make_dir_if_not_exists(DIRNAME_ERROR_LOG)
+    today = datetime.now().astimezone(TIME_ZONE).strftime('%Y-%m-%d')
+    make_dir_if_not_exists(DIRNAME_ERROR_LOG + today + '/')
+    error_log_file = logging.FileHandler(DIRNAME_ERROR_LOG + today + '/' + name + '.log', mode='a')
+    error_log_file.setFormatter(error_log_formatter)
+    error_log.setLevel(logging.ERROR)
+    error_log.addHandler(error_log_file)
+    return logging.getLogger(name)

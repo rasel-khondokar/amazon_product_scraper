@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
 from get_chrome_driver import GetChromeDriver
-from settings import CHROMEDRIVER_PATH, TIME_ZONE, TABLE_NAME_PRODUCT
+from settings import CHROMEDRIVER_PATH, TIME_ZONE, TABLE_NAME_PRODUCT, TABLE_NAME_PRODUCT_HTML
 
 from settings import MAIN_SITE_AMAZON, IMG_DIR, BASE_DIR
 from utils import image_downloader, make_dir_if_not_exists, process_keyword
@@ -18,6 +18,9 @@ from utils import image_downloader, make_dir_if_not_exists, process_keyword
 class Scraper():
     def __init__(self, db_connector=None):
         self.db_connector = db_connector
+
+    def set_logger(self, logger):
+        self.logger = logger
 
     def get_driver(self, url, headless=True):
         option = Options()
@@ -82,6 +85,21 @@ class Scraper():
                 return float(i)
             except ValueError:
                 continue
+    def get_price_from_multiple_elements(self, driver):
+        prices_elements = driver.find_elements(By.CSS_SELECTOR, 'span.olpWrapper')
+        prices = []
+        for ele in prices_elements:
+            prices.append(self.extract_price(ele.text))
+
+        if not prices:
+            ul_class ='ul.a-unordered-list a-nostyle a-button-list a-declarative a-button-toggle-group a-horizontal a-spacing-top-micro swatches swatchesSquare imageSwatches'\
+                .replace(' ', '.')
+            selectors = [f'{ul_class} li']
+            p = self.get_text_from_multiple_elements(driver, selectors)
+            prices.append(self.extract_price(p))
+
+        if prices:
+            return min(prices)
 
     def get_product_details(self,driver):
 
@@ -91,31 +109,27 @@ class Scraper():
         try:
             details['title'] = driver.find_element(By.CSS_SELECTOR, '#productTitle').text
         except Exception as e:
-            print(e)
+            self.logger.exception(e)
 
         try:
             price_selectors = ['.apexPriceToPay', '#olp_feature_div .a-color-price',
-                               '.a-button-selected span']
+                               '.a-button-selected span', '.priceToPay']
             price = self.get_text_from_multiple_elements(driver, price_selectors)
             if price:
                 details['price'] = self.extract_price(price)
             else:
                 try:
-                    prices_elements = driver.find_elements(By.CSS_SELECTOR, 'span.olpWrapper')
-                    prices = []
-                    for ele in prices_elements:
-                        prices.append(self.extract_price(ele.text))
-                    details['price'] = min(prices)
+                    details['price'] = self.get_price_from_multiple_elements(driver)
                 except Exception as e:
-                    print(e)
+                    self.logger.exception(e)
         except Exception as e:
-            print(e)
+            self.logger.exception(e)
 
         try:
             desc_selectors = ['#feature-bullets ul']
             details['product_desc'] = self.get_text_from_multiple_elements(driver, desc_selectors)
         except Exception as e:
-            print(e)
+            self.logger.exception(e)
 
         # Download product image
         try:
@@ -125,7 +139,7 @@ class Scraper():
             # image_path = f"{BASE_DIR}/{IMG_DIR}/"
             # image_downloader(img_url, details['product_id'], image_path)
         except Exception as e:
-            print(e)
+            self.logger.exception(e)
             print('error during image!')
 
         return details
@@ -146,21 +160,39 @@ class Scraper():
 
         # products = driver.find_elements(By.CSS_SELECTOR, '.s-line-clamp-4 a')
         products_selectors = ['.s-line-clamp-4 a', '.s-line-clamp-2 a']
-        products = self.get_text_from_multiple_elements(driver, products_selectors, 'element', multiple=True)
 
-        products_urls = list(set([product.get_attribute('href') for product in products]))
+        try:
+            products = self.get_text_from_multiple_elements(driver, products_selectors, 'element', multiple=True)
 
-        if len(products_urls)>no_products:
-            products_urls = products_urls[:no_products]
+            products_urls = list(set([product.get_attribute('href') for product in products]))
 
-        for product_url in products_urls:
-            try:
-                driver.get(product_url)
-                details = self.get_product_details(driver)
-                details['url'] = driver.current_url.split('/ref=')[0]
-                details['created_at'] = datetime.now().astimezone(TIME_ZONE)
-                details['keyword'] = keyword
-                saved_count, result = self.db_connector.save_to_table(TABLE_NAME_PRODUCT, details)
-                print(saved_count)
-            except Exception as e:
-                print(e)
+            if len(products_urls) > no_products:
+                products_urls = products_urls[:no_products]
+
+            for product_url in products_urls:
+                try:
+                    driver.get(product_url)
+                    details = self.get_product_details(driver)
+                    details['url'] = driver.current_url.split('/ref=')[0]
+                    details['created_at'] = datetime.now().astimezone(TIME_ZONE)
+                    details['keyword'] = keyword
+                    html = '<html>'
+                    saved_count, result = self.db_connector.save_to_table(TABLE_NAME_PRODUCT, {
+                        'product_id':details['product_id'],
+                        'title':details['title'],
+                        'created_at':details['created_at']
+                    })
+                    print(result)
+                    saved_count, result_html = self.db_connector.save_to_table(TABLE_NAME_PRODUCT_HTML, {
+                        'page_id':details['product_id'],
+                        'product_id':details['product_id'],
+                        'html':html,
+                        'created_at':details['created_at']
+                    })
+                    print(result_html)
+                except Exception as e:
+                    self.logger.exception(e)
+
+        except Exception as e:
+            self.logger.exception(e)
+

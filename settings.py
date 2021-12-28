@@ -3,9 +3,11 @@ import os
 from pathlib import Path
 import pytz
 
+APP_NAME = 'amazon_crawler'
 ROOT_DIR = Path(__file__).parent.parent
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 IMG_DIR = 'IMAGES'
+DIRNAME_ERROR_LOG = 'ERROR/'
 CHROMEDRIVER_PATH = 'chromedriver_linux64'
 MAIN_SITE_AMAZON = 'https://www.amazon.com/'
 DEFAULT_NO_PRODUCTS = 10
@@ -19,13 +21,19 @@ LOCAL_DB_HOST = 'localhost'
 LOCAL_DB_PORT = 3306
 TABLE_CHARSET = 'utf8mb4 COLLATE utf8mb4_unicode_ci'
 TABLE_NAME_KEYWORDS = 'product_keywords'
+
 TABLE_NAME_PRODUCT = 'amazon_products'
 LOCAL_DB_COLUMNS_PR_DE = """product_id VARCHAR(255) PRIMARY KEY,
-  keyword VARCHAR(255),
-  url VARCHAR(500),
-  title VARCHAR(500),
-  image_url VARCHAR(500),
-  product_desc LONGTEXT,
-  price FLOAT,
+  title VARCHAR(255),
   created_at DATETIME
 """
+
+TABLE_NAME_PRODUCT_HTML = 'amazon_products_html'
+LOCAL_DB_COLUMNS_PR_DE_HTML = """page_id VARCHAR(255) PRIMARY KEY,
+  product_id VARCHAR(255), 
+  html LONGTEXT,
+  created_at DATETIME
+"""
+TABLE_RELATIONSHIP_PRODUCT_HTML = f""", FOREIGN KEY (product_id) REFERENCES {TABLE_NAME_PRODUCT} (product_id)
+"""
+

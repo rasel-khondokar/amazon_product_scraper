@@ -70,11 +70,11 @@ class DBConnector():
             if table[0] == table_name:
                 return True
 
-    def create_table(self, tbname, columns, charset):
+    def create_table(self, tbname, columns, charset, relationship=''):
         if not self.check_table_existence(tbname):
             mycursor = self.connection.cursor()
             try:
-                sql = f"CREATE TABLE IF NOT EXISTS {tbname} ({columns}) CHARACTER SET {charset};"
+                sql = f"CREATE TABLE IF NOT EXISTS {tbname} ({columns} {relationship}) CHARACTER SET {charset};"
                 mycursor.execute(sql)
                 print(f'{tbname} table created!')
             except mysql.connector.Error as err:
