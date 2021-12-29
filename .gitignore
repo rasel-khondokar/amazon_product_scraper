@@ -7,8 +7,10 @@ chromedriver_linux64/
 *.pickle
 *.pdf
 *.webm
+*.wmv
 *.csv
 *.xlsx
+*.zip
 ERROR/
 REPORT/
 test.py

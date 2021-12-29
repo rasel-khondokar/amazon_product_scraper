@@ -23,17 +23,17 @@ TABLE_CHARSET = 'utf8mb4 COLLATE utf8mb4_unicode_ci'
 TABLE_NAME_KEYWORDS = 'product_keywords'
 
 TABLE_NAME_PRODUCT = 'amazon_products'
-LOCAL_DB_COLUMNS_PR_DE = """product_id VARCHAR(255) PRIMARY KEY,
-  title VARCHAR(255),
+LOCAL_DB_COLUMNS_PR_DE = """keyword_id VARCHAR(255) PRIMARY KEY,
+  keyword VARCHAR(255),
   created_at DATETIME
 """
 
 TABLE_NAME_PRODUCT_HTML = 'amazon_products_html'
 LOCAL_DB_COLUMNS_PR_DE_HTML = """page_id VARCHAR(255) PRIMARY KEY,
-  product_id VARCHAR(255), 
+  keyword_id VARCHAR(255), 
   html LONGTEXT,
   created_at DATETIME
 """
-TABLE_RELATIONSHIP_PRODUCT_HTML = f""", FOREIGN KEY (product_id) REFERENCES {TABLE_NAME_PRODUCT} (product_id)
+TABLE_RELATIONSHIP_PRODUCT_HTML = f""", FOREIGN KEY (keyword_id) REFERENCES {TABLE_NAME_PRODUCT} (keyword_id)
 """
 
