@@ -10,7 +10,8 @@ def main():
     error_logger = save_error_log(APP_NAME)
 
     # Get keywords from db
-    make_dir_if_not_exists(IMG_DIR)
+    # make_dir_if_not_exists(IMG_DIR)
+
     db_connector = DBConnector(CREDENTIAL_MYSQL, LOCAL_DB_HOST, LOCAL_DB_PORT)
     db_connector.connect(LOCAL_DBNAME)
     keywords = db_connector.get_keywords()
