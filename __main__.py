@@ -23,6 +23,9 @@ def main():
         # Go to amazon
         amazon_driver = scraper.get_driver(MAIN_SITE_AMAZON, headless=False)
 
+        # set location as New York
+        scraper.set_location(amazon_driver)
+
         # search keywords on amazon & save products details to db
         for keyword_dict in keywords:
             if 'KWYWORD' in keyword_dict:
