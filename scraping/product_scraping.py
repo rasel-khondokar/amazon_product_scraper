@@ -9,7 +9,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
 from get_chrome_driver import GetChromeDriver
-from settings import CHROMEDRIVER_PATH, TIME_ZONE, TABLE_NAME_PRODUCT, TABLE_NAME_PRODUCT_HTML
+
+from accessing_api import save_to_api
+from settings import CHROMEDRIVER_PATH, TIME_ZONE, TABLE_NAME_PRODUCT, TABLE_NAME_PRODUCT_HTML, PREFIX_TOP_PRODUCT, \
+    REF_URL
 
 from settings import MAIN_SITE_AMAZON, IMG_DIR, BASE_DIR
 from utils import image_downloader, make_dir_if_not_exists, process_keyword
@@ -191,30 +194,49 @@ class Scraper():
                 try:
                     driver.get(product_url)
                     details = self.get_product_details(driver)
-                    details['url'] = driver.current_url.split('/ref=')[0]
+                    url = driver.current_url.split('/ref=')[0]
+                    details['url'] = f'{url}/{REF_URL}'
                     products_details.append(details)
                 except Exception as e:
                     self.logger.exception(e)
 
+
+            # Prepare data to save DB and API
+            html = self.make_html_page({
+                'keyword': keyword,
+                'products': products_details
+            })
+
+            title = f"{PREFIX_TOP_PRODUCT} {keyword.replace(PREFIX_TOP_PRODUCT, '')}"
+            payload = {'title': title,
+                       'excerpt': f'Here is the list of the best {keyword}',
+                       'categories': '1',
+                       'content': html,
+                       'status': 'draft'}
+
             keyword_data = {
-                'keyword_id':uuid.uuid4().hex,
-                'keyword':keyword,
-                'created_at':datetime.now().astimezone(TIME_ZONE)
+                'keyword_id': uuid.uuid4().hex,
+                'keyword': keyword,
+                'created_at': datetime.now().astimezone(TIME_ZONE)
             }
 
+            # Save to DB
             saved_count, result = self.db_connector.save_to_table(TABLE_NAME_PRODUCT, keyword_data)
-
-            html = self.make_html_page({
-                'keyword':keyword,
-                'products':products_details
-            })
-
-            saved_count, result_html = self.db_connector.save_to_table(TABLE_NAME_PRODUCT_HTML, {
+            product_html_table_data = {**payload, **{
                 'page_id':uuid.uuid4().hex,
+                'keyword': keyword,
                 'keyword_id':keyword_data['keyword_id'],
-                'html':html,
                 'created_at':keyword_data['created_at']
-            })
+            }}
+            saved_count, result_html = self.db_connector.save_to_table(TABLE_NAME_PRODUCT_HTML, product_html_table_data)
+            print(result_html)
+
+            # Save to API
+            response = save_to_api(payload)
+            if response.status_code == 201:
+                print('Successfully saved via API!')
+            else:
+                print(response.text)
 
         except Exception as e:
             self.logger.exception(e)
@@ -369,14 +391,24 @@ class Scraper():
         </html>'''
         return html
 
+    def get_disclaimer(self, keyword):
+
+        # disclaimer = '''Disclaimer: We are using Amazon affiliate Product Advertising API to fetch products from amazon, include: price, content, image, logo, brand, feature of products which are trademarks of Amazon.com.
+        # So, when you buy through links on our site, we may earn an affiliate commission. '''
+
+        disclaimer = f'Our team researched on many products available online for {keyword}, chose the finest ones and prepared {keyword} Reviews for you. It was very difficult to shortlist the ideal {keyword} ' \
+                     f'from thousands of products online. However, We tried to make sure that you get only the Best {keyword} from our suggestions. Check our listings below'
+
+        return disclaimer
+
     def make_html_page(self, details):
 
-        static_desc = '''Disclaimer: We are using Amazon affiliate Product Advertising API to fetch products from amazon, include: price, content, image, logo, brand, feature of products which are trademarks of Amazon.com. So, when you buy through links on our site, we may earn an affiliate commission. '''
+        disclaimer = self.get_disclaimer(details['keyword'])
 
         html = f'''<h1 class="entry-title" itemprop="headline">{details['keyword']}</h1>
                         </header>
                         <div class="entry-content" itemprop="text">
-                           <p><em>{static_desc}<a href="https://www.botticellissouthcongress.com/disclaimer/" target="_blank" rel="noopener noreferrer" data-wpel-link="internal">Read more</a>. </em></p>
+                           <p><em>{disclaimer}<a href="https://www.botticellissouthcongress.com/disclaimer/" target="_blank" rel="noopener noreferrer" data-wpel-link="internal">Read more</a>. </em></p>
                            <h2><span style="color: #3366ff;"><strong>Top 10 Best Products (Key Word)</strong></span></h2>
                            <div class="egg-container cegg-list-withlogos">
                               <div class="egg-listcontainer">

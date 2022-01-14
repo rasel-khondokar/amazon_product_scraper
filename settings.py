@@ -13,6 +13,13 @@ MAIN_SITE_AMAZON = 'https://www.amazon.com/'
 DEFAULT_NO_PRODUCTS = 10
 TIME_ZONE = pytz.timezone('Asia/Dhaka')
 
+PREFIX_TOP_PRODUCT = 'Top 10'
+REF_URL = "?tag=electros-20"
+
+# API settings
+API_ENDPOINT = "https://biketoberfestmarin.com/wp-json/wp/v2/posts"
+
+# DB settings
 with open(f'{BASE_DIR}/credentials.json') as credentials_file:
     credentials = json.load(credentials_file)
 CREDENTIAL_MYSQL = credentials['mysql']
@@ -24,14 +31,19 @@ TABLE_NAME_KEYWORDS = 'product_keywords'
 
 TABLE_NAME_PRODUCT = 'amazon_products'
 LOCAL_DB_COLUMNS_PR_DE = """keyword_id VARCHAR(255) PRIMARY KEY,
-  keyword VARCHAR(255),
+  title VARCHAR(255),
   created_at DATETIME
 """
 
 TABLE_NAME_PRODUCT_HTML = 'amazon_products_html'
 LOCAL_DB_COLUMNS_PR_DE_HTML = """page_id VARCHAR(255) PRIMARY KEY,
   keyword_id VARCHAR(255), 
-  html LONGTEXT,
+  title VARCHAR(255), 
+  keyword VARCHAR(255), 
+  categories VARCHAR(255), 
+  status VARCHAR(255), 
+  excerpt LONGTEXT,
+  content LONGTEXT,
   created_at DATETIME
 """
 TABLE_RELATIONSHIP_PRODUCT_HTML = f""", FOREIGN KEY (keyword_id) REFERENCES {TABLE_NAME_PRODUCT} (keyword_id)
