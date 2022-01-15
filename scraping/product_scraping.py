@@ -1,4 +1,5 @@
 import os
+import random
 import time
 import uuid
 from datetime import datetime
@@ -271,6 +272,7 @@ class Scraper():
                 <div class="col-md-3 col-sm-3 col-xs-12 cegg-price-cell text-center">
                    <div class="cegg-price-row">
                       <div class="cegg-price cegg-price-color cegg-price-instock">${price}</div>
+                      <span>{round(random.uniform(9, 10), 1)}</span>
                    </div>
                 </div>
                 <div class="col-md-2 col-sm-2 col-xs-12 cegg-btn-cell">
@@ -286,7 +288,8 @@ class Scraper():
     def make_desc_list(self, features):
         html = ''
         for feature in features:
-            html += f'''<li>{feature}</li>\n'''
+            if feature:
+                html += f'''<li>{feature}</li>\n'''
         return html
 
     def make_products_desc(self, products):
