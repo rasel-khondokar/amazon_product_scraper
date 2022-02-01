@@ -171,6 +171,9 @@ class Scraper():
         search_btn = driver.find_element(By.CSS_SELECTOR, '#nav-search-submit-button')
         search_btn.click()
 
+    def get_elelment_by_text(self, html, text):
+        element = html.find_element_by_xpath(f"//*[contains(text(), '{text}')]")
+        return element
 
     def scrape_products(self, keyword, no_products, driver):
 
@@ -190,6 +193,7 @@ class Scraper():
             if len(products_urls) > no_products:
                 products_urls = products_urls[:no_products]
 
+            category = 'uncategorized'
             products_details = []
             for product_url in products_urls:
                 try:
@@ -197,6 +201,17 @@ class Scraper():
                     details = self.get_product_details(driver)
                     url = driver.current_url.split('/ref=')[0]
                     details['url'] = f'{url}/{REF_URL}'
+
+                    if category == 'uncategorized':
+                        try:
+                            category_ele = self.get_elelment_by_text(driver, 'Best Sellers Rank')
+                            category_ele = category_ele.find_element_by_xpath('..').find_element_by_css_selector('td')
+                            category_text = category_ele.text
+                            category_text = category_text.split(' (See Top')[0]
+                            category = category_text.split(' in ')[1]
+                        except Exception as e:
+                            self.logger.exception(e)
+
                     products_details.append(details)
                 except Exception as e:
                     self.logger.exception(e)
@@ -212,6 +227,7 @@ class Scraper():
             payload = {'title': title,
                        'excerpt': f'Here is the list of the best {keyword}',
                        'categories': '1',
+                       'categories_1': category,
                        'content': html,
                        'status': 'draft'}
 
