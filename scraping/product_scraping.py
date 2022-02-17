@@ -195,6 +195,18 @@ class Scraper():
 
             category = 'uncategorized'
             products_details = []
+            #
+            # products_urls = ['https://www.amazon.com/Trainer-Breathable-Corset-Cincher-Workout/dp/B0932WRZPL/?tag=Samiul-22',
+            #                  'https://www.amazon.com/GAODI-Trainer-Corset-Neoprene-Cincher/dp/B07BQG113V/?tag=Samiul-22&th=1',
+            #                  'https://www.amazon.com/Upgraded-Professional-Semi-Permanent-Curling-Suitable/dp/B07CVB3QN9/?tag=Samiul-22',
+            #                  'https://www.amazon.com/Friends-Hoodies-Juniors-Sweatshirts-Lavender/dp/B08ZB2G77Q/?tag=Samiul-22&th=1',
+            #                  'https://www.amazon.com/Menus-Memories-Punjab-Meals-Nourish-ebook/dp/B07Y8VT8TD/?tag=Samiul-22',
+            #                  'https://www.amazon.com/Indian-Instant-Pot%C2%AE-Cookbook-Traditional/dp/1939754542/?tag=Samiul-22',
+            #                  'https://www.amazon.com/Women-Family-Matching-Clothing-Pullover-Sweatshirt%EF%BC%88Black/dp/B07YC7H2PW/?tag=Samiul-22&th=1',
+            #                  'https://www.amazon.com/Nature-Made-Melatonin-200-L-theanine/dp/B007RC6ZSA/?tag=Samiul-22&th=1',
+            #                  'https://www.amazon.com/Kvintor-Pellets-177-300ct-150ct/dp/B07Z21B8C6/?tag=Samiul-22&th=1&psc=1',
+            #                  'https://www.amazon.com/Mademark-SpongeBob-SquarePants-best-T-Shirt/dp/B096NHLF5L/?tag=Samiul-22&customId=B0752XJYNL&th=1']
+
             for product_url in products_urls:
                 try:
                     driver.get(product_url)
@@ -205,7 +217,11 @@ class Scraper():
                     if category == 'uncategorized':
                         try:
                             category_ele = self.get_elelment_by_text(driver, 'Best Sellers Rank')
-                            category_ele = category_ele.find_element_by_xpath('..').find_element_by_css_selector('td')
+                            try:
+                                category_ele = category_ele.find_element_by_xpath('..').find_element_by_css_selector(
+                                    'td')
+                            except:
+                                category_ele = category_ele.find_element_by_xpath('..')
                             category_text = category_ele.text
                             category_text = category_text.split(' (See Top')[0]
                             category = category_text.split(' in ')[1]
@@ -246,7 +262,7 @@ class Scraper():
                 'created_at':keyword_data['created_at']
             }}
             saved_count, result_html = self.db_connector.save_to_table(TABLE_NAME_PRODUCT_HTML, product_html_table_data)
-            print(result_html)
+            print(saved_count)
 
             # Save to API
             response = save_to_api(payload)
